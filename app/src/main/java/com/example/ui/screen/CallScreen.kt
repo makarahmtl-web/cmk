@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -186,24 +187,37 @@ fun CallScreen(viewModel: MainViewModel) {
                             OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
-                                placeholder = { Text("ស្វែងរកឈ្មោះមិត្តភក្តិ ឬសំណើ...", fontSize = 13.sp, color = Color.Gray) },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = CMKDeepBlue) },
+                                placeholder = { 
+                                    Text(
+                                        text = "ស្វែងរកឈ្មោះមិត្តភក្តិ ឬសំណើ...", 
+                                        fontSize = 13.sp, 
+                                        color = Color.DarkGray
+                                    ) 
+                                },
+                                textStyle = TextStyle(
+                                    color = Color.Black, 
+                                    fontSize = 14.sp, 
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF002D62)) },
                                 trailingIcon = {
                                     if (searchQuery.isNotEmpty()) {
                                         IconButton(onClick = { searchQuery = "" }) {
-                                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.Gray)
+                                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.DarkGray)
                                         }
                                     }
                                 },
                                 singleLine = true,
                                 shape = RoundedCornerShape(20.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CMKGoldAccent,
-                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedBorderColor = Color(0xFF002D62),
+                                    unfocusedBorderColor = Color.LightGray,
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
-                                    focusedTextColor = Color(0xFF0F172A),
-                                    unfocusedTextColor = Color(0xFF0F172A)
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    focusedPlaceholderColor = Color.DarkGray,
+                                    unfocusedPlaceholderColor = Color.DarkGray
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -443,7 +457,8 @@ fun FriendRequestCard(
                     Text(
                         text = data.mutualInfo,
                         fontSize = 12.sp,
-                        color = Color(0xFF64748B)
+                        color = Color(0xFF334155),
+                        fontWeight = FontWeight.Medium
                     )
                 }
 
@@ -493,12 +508,12 @@ fun FriendRequestCard(
                                 .height(38.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFFE2E8F0),
-                                contentColor = Color(0xFF334155)
+                                contentColor = Color.Black
                             ),
                             shape = RoundedCornerShape(10.dp),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("លុប", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("លុប", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
                         }
                     }
                 }
@@ -518,8 +533,8 @@ fun SuggestedFriendCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(16.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
         border = BorderStroke(1.dp, Color(0xFFF1F5F9))
@@ -527,12 +542,12 @@ fun SuggestedFriendCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(54.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFE0F2FE), CircleShape)
                     .clickable { onProfileClick() },
@@ -542,71 +557,78 @@ fun SuggestedFriendCard(
                     text = data.name.take(1),
                     color = CMKDeepBlue,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp
+                    fontSize = 18.sp
                 )
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Column(modifier = Modifier.clickable { onProfileClick() }) {
-                    Text(data.name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF0F172A))
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(data.roleInfo, fontSize = 12.sp, color = Color(0xFF64748B))
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(data.mutualCount, fontSize = 11.sp, color = Color(0xFF94A3B8))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onProfileClick() }
+            ) {
+                Text(
+                    text = data.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color.Black,
+                    maxLines = 1
+                )
+                Text(
+                    text = data.roleInfo,
+                    fontSize = 11.sp,
+                    color = Color(0xFF475569),
+                    maxLines = 1
+                )
+                Text(
+                    text = data.mutualCount,
+                    fontSize = 10.sp,
+                    color = Color(0xFF64748B),
+                    maxLines = 1
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            if (isSent) {
+                Surface(
+                    color = Color(0xFFEFF6FF),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFBFDBFE))
+                ) {
+                    Text(
+                        text = "✓ ផ្ញើរួច",
+                        color = Color(0xFF002D62),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                if (isSent) {
-                    Surface(
-                        color = Color(0xFFEFF6FF),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Button(
+                        onClick = onAdd,
+                        modifier = Modifier.height(32.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF002D62),
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
                     ) {
-                        Text(
-                            text = "✓ បានផ្ញើសំណើជាមិត្តភក្តិ",
-                            color = CMKDeepBlue,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 6.dp)
-                        )
+                        Text("បន្ថែមជាមិត្ត", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = onAdd,
-                            modifier = Modifier
-                                .weight(1.3f)
-                                .height(36.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = CMKDeepBlue,
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                        ) {
-                            Text("បន្ថែមជាមិត្ត", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
 
-                        TextButton(
-                            onClick = onRemove,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(36.dp),
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = Color(0xFF64748B)
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("លុបចេញ", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                        }
+                    TextButton(
+                        onClick = onRemove,
+                        modifier = Modifier.height(32.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                    ) {
+                        Text("លុបចេញ", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Color(0xFF64748B))
                     }
                 }
             }

@@ -205,24 +205,24 @@ fun FeedScreen(viewModel: MainViewModel) {
                                 },
                                 placeholder = { 
                                     Text(
-                                        "ស្វែងរកការផុស មិត្តភក្តិ ឬទីតាំងសំណង់...", 
+                                        text = "ស្វែងរកការផុស មិត្តភក្តិ...", 
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF64748B)
+                                        color = Color.DarkGray
                                     ) 
                                 },
                                 textStyle = TextStyle(
-                                    color = Color(0xFF0F172A),
+                                    color = Color.Black,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold
                                 ),
                                 leadingIcon = {
-                                    Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF0F172A))
+                                    Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF002D62))
                                 },
                                 trailingIcon = {
                                     if (searchQuery.isNotEmpty()) {
                                         IconButton(onClick = { searchQuery = "" }) {
-                                            Icon(Icons.Default.Close, contentDescription = "Clear", tint = Color(0xFF64748B))
+                                            Icon(Icons.Default.Close, contentDescription = "Clear", tint = Color.DarkGray)
                                         }
                                     }
                                 },
@@ -230,20 +230,20 @@ fun FeedScreen(viewModel: MainViewModel) {
                                 shape = RoundedCornerShape(24.dp),
                                 modifier = Modifier.fillMaxWidth().height(52.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF0F172A),
-                                    unfocusedBorderColor = Color(0xFFCBD5E1),
-                                    unfocusedContainerColor = Color(0xFFF1F5F9),
+                                    focusedBorderColor = Color(0xFF002D62),
+                                    unfocusedBorderColor = Color.LightGray,
                                     focusedContainerColor = Color.White,
-                                    focusedTextColor = Color(0xFF0F172A),
-                                    unfocusedTextColor = Color(0xFF0F172A),
-                                    focusedPlaceholderColor = Color(0xFF64748B),
-                                    unfocusedPlaceholderColor = Color(0xFF64748B)
+                                    unfocusedContainerColor = Color.White,
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    focusedPlaceholderColor = Color.DarkGray,
+                                    unfocusedPlaceholderColor = Color.DarkGray
                                 )
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // Filter Chips with high contrast text & borders
+                            // Filter Chips
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -255,23 +255,23 @@ fun FeedScreen(viewModel: MainViewModel) {
                                         onClick = { selectedFilterTab = tab },
                                         label = { 
                                             Text(
-                                                tab, 
+                                                text = tab, 
                                                 fontSize = 12.sp, 
                                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                                color = if (isSelected) Color.White else Color(0xFF334155)
+                                                color = if (isSelected) Color.White else Color.Black
                                             ) 
                                         },
                                         colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = CMKDeepBlue,
+                                            selectedContainerColor = Color(0xFF002D62),
                                             selectedLabelColor = Color.White,
-                                            containerColor = Color(0xFFF1F5F9),
-                                            labelColor = Color(0xFF334155)
+                                            containerColor = Color.White,
+                                            labelColor = Color.Black
                                         ),
                                         border = FilterChipDefaults.filterChipBorder(
                                             enabled = true,
                                             selected = isSelected,
-                                            borderColor = Color(0xFFCBD5E1),
-                                            selectedBorderColor = CMKDeepBlue
+                                            borderColor = Color.LightGray,
+                                            selectedBorderColor = Color(0xFF002D62)
                                         )
                                     )
                                 }

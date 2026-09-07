@@ -46,88 +46,10 @@ class SupabaseRepository(private val client: SupabaseClient = SupabaseClient()) 
     }
 
     private fun seedInitialData() {
-        val initialPosts = listOf(
-            FeedPost(
-                id = "sp_post_1",
-                userId = "usr_cmk_enterprise",
-                userDisplayName = "CMK Heavy Industries Hub",
-                userAvatarInitials = "CMK",
-                timeAgo = "15 នាទីមុន",
-                content = "ការមកដល់នៃដែកសរសៃសំណង់ SD390/SD400 ស្តង់ដារអន្តរជាតិនៅដេប៉ូធំផ្លូវជាតិលេខ ៤។ ទទួលបញ្ជាទិញដុំ និងរាយសម្រាប់គម្រោងធំៗ។",
-                imageUrl = "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=600",
-                likesCount = 42,
-                commentsCount = 8,
-                isLikedByMe = false
-            ),
-            FeedPost(
-                id = "sp_post_2",
-                userId = "usr_angkor_cement",
-                userDisplayName = "ស៊ីម៉ង់ត៍អូដ្ឋ & ឥដ្ឋការ៉ូកម្ពុជា",
-                userAvatarInitials = "OC",
-                timeAgo = "1 ម៉ោងមុន",
-                content = "ប្រូម៉ូសិនពិសេសរដូវកាលសាងសង់៖ បញ្ចុះតម្លៃ 12% លើការកុម្ម៉ង់ស៊ីម៉ង់ត៍ និងក្បឿងអ៊ីតាលីលើសពី 5 តោន។",
-                imageUrl = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=600",
-                likesCount = 89,
-                commentsCount = 14,
-                isLikedByMe = true
-            )
-        )
-        _posts.value = initialPosts
+        _posts.value = emptyList()
 
-        val initialProducts = listOf(
-            MaterialItem(
-                id = "sp_prod_1",
-                name = "Premium Italian Porcelain Floor Tiles (60x60)",
-                category = MaterialCategory.BRICKS_TILES,
-                imageUrl = "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=400",
-                specDetails = "Grade A++ Double Loading Porcelain, Matte Anti-Slip Finish, Rectified Edge.",
-                bulkPrice = "$14.50 / Box (4 pcs / 1.44 m²)",
-                availability = "In Stock"
-            ),
-            MaterialItem(
-                id = "sp_prod_2",
-                name = "Sleek Matte Black Smart Toilet System",
-                category = MaterialCategory.BATHROOM_PLUMBING,
-                imageUrl = "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&q=80&w=400",
-                specDetails = "Dual-flush eco-friendly tech, heated seat, auto deodorizer, touchless remote controls.",
-                bulkPrice = "$380.00 / Unit (Wholesale Available)",
-                availability = "In Stock"
-            ),
-            MaterialItem(
-                id = "sp_prod_3",
-                name = "DeWalt Heavy-Duty Brushless Cordless Drill 20V",
-                category = MaterialCategory.HARDWARE_ELECTRICAL,
-                imageUrl = "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&q=80&w=400",
-                specDetails = "20V MAX Lithium-Ion, 1/2-Inch Ratcheting Chuck, 2x 4.0Ah XR Batteries & Fast Charger included.",
-                bulkPrice = "$175.00 / Kit",
-                availability = "In Stock"
-            )
-        )
-        _products.value = initialProducts
-
-        val initialOrders = listOf(
-            MaterialOrder(
-                id = "order_1",
-                orderNumber = "CMK-882190",
-                userId = "usr_current",
-                customerName = "Makara HTL",
-                customerPhone = "012 345 678",
-                deliveryAddress = "Phnom Penh, Cambodia",
-                items = listOf(
-                    OrderItem(
-                        productId = "sp_prod_1",
-                        productName = "Premium Italian Porcelain Floor Tiles",
-                        unitPrice = 14.50,
-                        quantity = 50,
-                        imageUrl = "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=400"
-                    )
-                ),
-                totalAmount = 725.00,
-                status = OrderStatus.CONFIRMED,
-                notes = "សូមដឹកជញ្ជូននៅម៉ោង ៩ ព្រឹក"
-            )
-        )
-        _orders.value = initialOrders
+        _products.value = emptyList()
+        _orders.value = emptyList()
     }
 
     /**

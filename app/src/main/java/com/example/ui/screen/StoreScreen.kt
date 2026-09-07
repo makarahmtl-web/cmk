@@ -243,12 +243,12 @@ fun StoreScreen(viewModel: MainViewModel) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.setSearchQuery(it) },
-                    placeholder = { Text("Search rebar, bricks, tiling materials...", fontSize = 13.sp) },
+                    placeholder = { Text("Search rebar, bricks, tiling materials...", fontSize = 13.sp, color = Color.DarkGray) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = CMKDeepBlue, modifier = Modifier.size(18.dp)) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.DarkGray, modifier = Modifier.size(16.dp))
                             }
                         }
                     },
@@ -261,10 +261,14 @@ fun StoreScreen(viewModel: MainViewModel) {
                         focusedBorderColor = Color.Transparent,
                         unfocusedBorderColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedPlaceholderColor = Color.DarkGray,
+                        unfocusedPlaceholderColor = Color.DarkGray
                     ),
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp)
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Color.Black)
                 )
             }
 
@@ -303,10 +307,10 @@ fun StoreScreen(viewModel: MainViewModel) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Icon(Icons.Default.Inbox, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(64.dp))
+                    Icon(Icons.Default.Storefront, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(64.dp))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No materials match search or location", fontWeight = FontWeight.Bold, color = Color.DarkGray)
-                    Text("Try clearing filters or changing area.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
+                    Text("មិនទាន់មានទំនិញ/សម្ភារៈនៅក្នុងហាងនៅឡើយទេ", fontWeight = FontWeight.Bold, color = Color.DarkGray, fontSize = 15.sp)
+                    Text("អ្នកអាចចុចប៊ូតុង + ដើម្បីបន្ថែមសម្ភារៈ ឬទំនិញថ្មីបាន!", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
                 }
             } else {
                 LazyColumn(
@@ -333,113 +337,217 @@ fun StoreScreen(viewModel: MainViewModel) {
             }
         }
 
-        // --- POPUP: CAMBODIA LOCATION PICKER DIALOG ---
+        // --- POPUP: CAMBODIA LOCATION PICKER DIALOG (FULL SCREEN) ---
         if (showLocationPickerDialog) {
             var tempProvince by remember { mutableStateOf(selectedProvince) }
             var tempDistrict by remember { mutableStateOf(selectedDistrict) }
             var showingDistricts by remember { mutableStateOf(false) }
+            var locationQuery by remember { mutableStateOf("") }
 
-            AlertDialog(
+            androidx.compose.ui.window.Dialog(
                 onDismissRequest = { showLocationPickerDialog = false },
-                title = { 
-                    Text(
-                        if (showingDistricts) "Select District (ស្រុក/ខណ្ឌ)" else "Select Province (ខេត្ត/រាជធានី)",
-                        fontWeight = FontWeight.Bold,
-                        color = CMKDeepBlue,
-                        fontSize = 16.sp
-                    )
-                },
-                text = {
-                    Box(modifier = Modifier.height(300.dp).fillMaxWidth()) {
-                        if (!showingDistricts) {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                // Dynamic trigger for selecting All Cambodia
-                                item {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                viewModel.updateLocation("គ្រប់ខេត្ត/ក្រុង", "គ្រប់ស្រុក/ខណ្ឌ")
-                                                showLocationPickerDialog = false
-                                                Toast.makeText(context, "Showing all locations", Toast.LENGTH_SHORT).show()
-                                            }
-                                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Default.Language, contentDescription = null, tint = CMKDeepBlue, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Text("គ្រប់ខេត្ត/ក្រុង (All Cambodia)", fontWeight = FontWeight.ExtraBold, color = CMKDeepBlue)
+                properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.White
+                ) {
+                    Scaffold(
+                        containerColor = Color.White,
+                        topBar = {
+                            TopAppBar(
+                                title = {
+                                    Text(
+                                        text = if (showingDistricts) "ជ្រើសរើសស្រុក/ខណ្ឌ ($tempProvince)" else "ជ្រើសរើសខេត្ត/រាជធានី (Select Province)",
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        fontSize = 16.sp
+                                    )
+                                },
+                                navigationIcon = {
+                                    IconButton(onClick = {
+                                        if (showingDistricts) {
+                                            showingDistricts = false
+                                        } else {
+                                            showLocationPickerDialog = false
+                                        }
+                                    }) {
+                                        Icon(
+                                            imageVector = if (showingDistricts) Icons.Default.ArrowBack else Icons.Default.Close,
+                                            contentDescription = "Back or Close",
+                                            tint = Color.White
+                                        )
                                     }
-                                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                                },
+                                colors = TopAppBarDefaults.topAppBarColors(containerColor = CMKDeepBlue)
+                            )
+                        }
+                    ) { dialogPadding ->
+                        Column(
+                            modifier = Modifier
+                                .padding(dialogPadding)
+                                .fillMaxSize()
+                                .background(Color.White)
+                        ) {
+                            // Search Location Field
+                            OutlinedTextField(
+                                value = locationQuery,
+                                onValueChange = { locationQuery = it },
+                                placeholder = { Text("ស្វែងរកខេត្ត ឬស្រុក/ខណ្ឌ...", color = Color.Gray, fontSize = 13.sp) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = CMKDeepBlue) },
+                                trailingIcon = {
+                                    if (locationQuery.isNotEmpty()) {
+                                        IconButton(onClick = { locationQuery = "" }) {
+                                            Icon(Icons.Default.Clear, contentDescription = null, tint = Color.Black)
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = CMKDeepBlue,
+                                    unfocusedBorderColor = Color(0xFFCBD5E1),
+                                    focusedContainerColor = Color(0xFFF8FAFC),
+                                    unfocusedContainerColor = Color(0xFFF8FAFC),
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    focusedPlaceholderColor = Color.Gray,
+                                    unfocusedPlaceholderColor = Color.Gray
+                                ),
+                                singleLine = true,
+                                textStyle = TextStyle(color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            )
+
+                            if (!showingDistricts) {
+                                val filteredProvinces = cambodiaProvinces.filter {
+                                    it.first.contains(locationQuery, ignoreCase = true) ||
+                                    it.second.any { d -> d.contains(locationQuery, ignoreCase = true) }
                                 }
 
-                                items(cambodiaProvinces) { (provinceName, districts) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                tempProvince = provinceName
-                                                tempDistrict = districts.first()
-                                                showingDistricts = true
-                                            }
-                                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Default.Place, contentDescription = null, tint = CMKDeepBlue, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Text(provinceName, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
-                                    }
-                                    HorizontalDivider(color = Color(0xFFF1F5F9))
-                                }
-                            }
-                        } else {
-                            val activeDistricts = cambodiaProvinces.firstOrNull { it.first == tempProvince }?.second ?: emptyList()
-                            Column {
-                                TextButton(
-                                    onClick = { showingDistricts = false },
-                                    modifier = Modifier.align(Alignment.Start)
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 16.dp)
                                 ) {
-                                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Back to Provinces", fontSize = 12.sp)
-                                }
-                                LazyColumn(modifier = Modifier.fillMaxSize().weight(1.0f)) {
-                                    // Option for selecting all districts in this province
                                     item {
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 6.dp)
+                                                .clickable {
+                                                    viewModel.updateLocation("គ្រប់ខេត្ត/ក្រុង", "គ្រប់ស្រុក/ខណ្ឌ")
+                                                    showLocationPickerDialog = false
+                                                    Toast.makeText(context, "បង្ហាញគ្រប់ទីតាំង (All Cambodia)", Toast.LENGTH_SHORT).show()
+                                                },
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+                                            border = BorderStroke(1.dp, Color(0xFFBFDBFE))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(14.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(Icons.Default.Language, contentDescription = null, tint = CMKDeepBlue, modifier = Modifier.size(22.dp))
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Column {
+                                                    Text("គ្រប់ខេត្ត/ក្រុង (All Cambodia)", fontWeight = FontWeight.Bold, color = CMKDeepBlue, fontSize = 15.sp)
+                                                    Text("បង្ហាញទំនិញ និងសេវាកម្មទាំងអស់ក្នុងប្រទេសកម្ពុជា", fontSize = 11.sp, color = Color(0xFF475569))
+                                                }
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+
+                                    items(filteredProvinces) { (provinceName, districts) ->
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .clip(RoundedCornerShape(10.dp))
                                                 .clickable {
-                                                    viewModel.updateLocation(tempProvince, "គ្រប់ស្រុក/ខណ្ឌ")
-                                                    showLocationPickerDialog = false
-                                                    Toast.makeText(context, "Location set to: $tempProvince (All)", Toast.LENGTH_SHORT).show()
+                                                    tempProvince = provinceName
+                                                    tempDistrict = districts.first()
+                                                    showingDistricts = true
+                                                    locationQuery = ""
                                                 }
-                                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                                .padding(vertical = 14.dp, horizontal = 12.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Icon(Icons.Default.NavigateNext, contentDescription = null, tint = CMKGoldAccent, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Text("គ្រប់ស្រុក/ខណ្ឌ (All Districts)", fontWeight = FontWeight.Bold, color = CMKDeepBlue)
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .background(Color(0xFFF1F5F9), CircleShape),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(Icons.Default.Place, contentDescription = null, tint = CMKDeepBlue, modifier = Modifier.size(20.dp))
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(provinceName, fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 15.sp)
+                                                Text("${districts.size} ស្រុក/ខណ្ឌ", fontSize = 11.sp, color = Color(0xFF64748B))
+                                            }
+                                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
                                         }
                                         HorizontalDivider(color = Color(0xFFF1F5F9))
                                     }
+                                }
+                            } else {
+                                val activeDistricts = cambodiaProvinces.firstOrNull { it.first == tempProvince }?.second ?: emptyList()
+                                val filteredDistricts = activeDistricts.filter { it.contains(locationQuery, ignoreCase = true) }
 
-                                    items(activeDistricts) { districtName ->
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 16.dp)
+                                ) {
+                                    item {
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 6.dp)
+                                                .clickable {
+                                                    viewModel.updateLocation(tempProvince, "គ្រប់ស្រុក/ខណ្ឌ")
+                                                    showLocationPickerDialog = false
+                                                    Toast.makeText(context, "ទីតាំង: $tempProvince (គ្រប់ស្រុក)", Toast.LENGTH_SHORT).show()
+                                                },
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF3C7)),
+                                            border = BorderStroke(1.dp, Color(0xFFFDE68A))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(14.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF92400E), modifier = Modifier.size(22.dp))
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Text("គ្រប់ស្រុក/ខណ្ឌក្នុង $tempProvince", fontWeight = FontWeight.Bold, color = Color(0xFF92400E), fontSize = 14.sp)
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+
+                                    items(filteredDistricts) { districtName ->
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .clip(RoundedCornerShape(10.dp))
                                                 .clickable {
                                                     tempDistrict = districtName
                                                     viewModel.updateLocation(tempProvince, tempDistrict)
                                                     showLocationPickerDialog = false
-                                                    Toast.makeText(context, "Location set to: $tempProvince, $tempDistrict", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, "ទីតាំង: $tempProvince, $tempDistrict", Toast.LENGTH_SHORT).show()
                                                 }
-                                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                                .padding(vertical = 14.dp, horizontal = 12.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Icon(Icons.Default.NavigateNext, contentDescription = null, tint = CMKGoldAccent, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Text(districtName, color = Color(0xFF1E293B))
+                                            Icon(Icons.Default.NavigateNext, contentDescription = null, tint = CMKDeepBlue, modifier = Modifier.size(20.dp))
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(districtName, fontWeight = FontWeight.SemiBold, color = Color.Black, fontSize = 14.sp)
                                         }
                                         HorizontalDivider(color = Color(0xFFF1F5F9))
                                     }
@@ -447,13 +555,8 @@ fun StoreScreen(viewModel: MainViewModel) {
                             }
                         }
                     }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showLocationPickerDialog = false }) {
-                        Text("Cancel", color = Color.Gray)
-                    }
                 }
-            )
+            }
         }
 
         // --- BOTTOM SHEET: CATEGORY SELECTION FILTER ---
@@ -1012,7 +1115,7 @@ fun CategoryChipCompact(
     ) {
         Text(
             text = name,
-            color = if (isSelected) Color.White else Slate600,
+            color = if (isSelected) Color.White else Color(0xFF0F172A),
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -1099,7 +1202,7 @@ fun MaterialItemCard(
                     text = item.name,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.DarkGray,
+                    color = Color(0xFF0F172A),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1107,7 +1210,8 @@ fun MaterialItemCard(
                 Text(
                     text = item.specDetails,
                     fontSize = 11.sp,
-                    color = Color.Gray,
+                    color = Color(0xFF334155),
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = 4.dp),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -1122,7 +1226,7 @@ fun MaterialItemCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("BULK DEALER PRICE", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Slate400)
+                        Text("BULK DEALER PRICE", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color(0xFF475569))
                         Text(item.bulkPrice, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = CMKDeepBlue)
                     }
 

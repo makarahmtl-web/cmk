@@ -2,6 +2,7 @@ package com.example.ui.screen
 
 import android.widget.Toast
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -368,18 +369,18 @@ fun ChatScreen(viewModel: MainViewModel) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search Direct Messages...", fontSize = 13.sp, color = Color.Gray) },
+                        placeholder = { Text("Search Direct Messages...", fontSize = 13.sp, color = Color.DarkGray) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = "Search",
-                                tint = Color.Gray
+                                tint = Color.DarkGray
                             )
                         },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(imageVector = Icons.Default.Close, contentDescription = "Clear", tint = Color.Gray)
+                                    Icon(imageVector = Icons.Default.Close, contentDescription = "Clear", tint = Color.DarkGray)
                                 }
                             }
                         },
@@ -391,9 +392,14 @@ fun ChatScreen(viewModel: MainViewModel) {
                             focusedBorderColor = CMKDeepBlue,
                             unfocusedBorderColor = Color(0xFFCBD5E1),
                             focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
+                            unfocusedContainerColor = Color.White,
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedPlaceholderColor = Color.DarkGray,
+                            unfocusedPlaceholderColor = Color.DarkGray
                         ),
-                        singleLine = true
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontSize = 13.sp)
                     )
 
                     // Active Filter Chip Display
@@ -571,6 +577,7 @@ fun ChatScreen(viewModel: MainViewModel) {
                 var groupName by remember { mutableStateOf("") }
                 AlertDialog(
                     onDismissRequest = { showCreateGroupDialog = false },
+                    containerColor = Color.White,
                     title = {
                         Text("Create a Group", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     },
@@ -715,7 +722,8 @@ fun XChatItemRow(
                 Text(
                     text = thread.timeAgo,
                     fontSize = 11.sp,
-                    color = Color.Gray,
+                    color = Color(0xFF334155),
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(start = 6.dp)
                 )
             }
@@ -723,7 +731,8 @@ fun XChatItemRow(
             Text(
                 text = thread.handle,
                 fontSize = 11.sp,
-                color = Color(0xFF64748B),
+                color = Color(0xFF334155),
+                fontWeight = FontWeight.Medium,
                 maxLines = 1
             )
 
@@ -737,8 +746,8 @@ fun XChatItemRow(
                 Text(
                     text = thread.lastMessage,
                     fontSize = 12.sp,
-                    color = if (thread.unreadCount > 0) Color(0xFF0F172A) else Color(0xFF64748B),
-                    fontWeight = if (thread.unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
+                    color = if (thread.unreadCount > 0) Color(0xFF0F172A) else Color(0xFF334155),
+                    fontWeight = if (thread.unreadCount > 0) FontWeight.Bold else FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -1030,6 +1039,7 @@ fun XConversationThreadView(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
     val globalMessages by viewModel.chatMessages.collectAsState()
     val threadMessages = remember(globalMessages, thread.id) {
         globalMessages.filter { it.threadId == null || it.threadId == thread.id }
@@ -1038,6 +1048,14 @@ fun XConversationThreadView(
     var selectedChatImageUri by remember { mutableStateOf<String?>(null) }
     var zoomedImageUrl by remember { mutableStateOf<String?>(null) }
     var isSendingImage by remember { mutableStateOf(false) }
+    
+    // Voice recording states
+    var isRecordingVoice by remember { mutableStateOf(false) }
+    var recordingSeconds by remember { mutableStateOf(0) }
+    
+    // Action sheet state for unsendMessage/delete/reaction
+    var selectedMessageForAction by remember { mutableStateOf<ChatMessage?>(null) }
+
     val listState = rememberLazyListState()
 
     val photoPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -1045,6 +1063,17 @@ fun XConversationThreadView(
     ) { uri ->
         if (uri != null) {
             selectedChatImageUri = uri.toString()
+        }
+    }
+
+    // Voice recording timer loop
+    LaunchedEffect(isRecordingVoice) {
+        if (isRecordingVoice) {
+            recordingSeconds = 0
+            while (isRecordingVoice) {
+                kotlinx.coroutines.delay(1000)
+                recordingSeconds++
+            }
         }
     }
 
@@ -1066,7 +1095,7 @@ fun XConversationThreadView(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
                                 .background(thread.avatarBgColor),
                             contentAlignment = Alignment.Center
@@ -1075,7 +1104,7 @@ fun XConversationThreadView(
                                 text = thread.initials,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
+                                fontSize = 15.sp
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
@@ -1099,7 +1128,7 @@ fun XConversationThreadView(
                                 }
                             }
                             Text(
-                                text = if (thread.isOnline) "● Active Now" else thread.handle,
+                                text = if (thread.isOnline) "● កំពុងដំណើរការ (Active Now)" else thread.handle,
                                 fontSize = 10.sp,
                                 color = if (thread.isOnline) Color(0xFF4ADE80) else Color.LightGray
                             )
@@ -1123,6 +1152,7 @@ fun XConversationThreadView(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
+                .imePadding() // Floating keyboard support!
         ) {
             // Conversation Body
             LazyColumn(
@@ -1130,11 +1160,11 @@ fun XConversationThreadView(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 12.dp),
                 contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // First initial welcome bubble for this thread
+                // First initial welcome header
                 item {
                     Column(
                         modifier = Modifier
@@ -1173,7 +1203,7 @@ fun XConversationThreadView(
                     }
                 }
 
-                // Display partner initial msg
+                // Partner initial message
                 item {
                     ChatBubble(
                         message = ChatMessage(
@@ -1183,16 +1213,18 @@ fun XConversationThreadView(
                             text = thread.lastMessage,
                             timestamp = System.currentTimeMillis() - 3600000
                         ),
-                        isMe = false
+                        isMe = false,
+                        onMessageClick = { selectedMessageForAction = it }
                     )
                 }
 
                 // Render dynamic messages sent in this thread
-                items(threadMessages) { msg ->
+                items(threadMessages, key = { it.id }) { msg ->
                     ChatBubble(
                         message = msg,
                         isMe = true,
-                        onImageClick = { url -> zoomedImageUrl = url }
+                        onImageClick = { url -> zoomedImageUrl = url },
+                        onMessageClick = { selectedMessageForAction = it }
                     )
                 }
             }
@@ -1247,94 +1279,216 @@ fun XConversationThreadView(
                 }
             }
 
-            // Bottom Input Row
+            // Bottom Floating Input Bar (Adjusts right above soft keyboard)
             Surface(
                 color = Color.White,
-                shadowElevation = 8.dp
+                shadowElevation = 10.dp,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = {
-                        photoPickerLauncher.launch(
-                            androidx.activity.result.PickVisualMediaRequest(
-                                androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
-                            )
-                        )
-                    }) {
-                        Icon(imageVector = Icons.Default.Image, contentDescription = "Attach Photo", tint = CMKDeepBlue)
-                    }
-
-                    IconButton(onClick = {
-                        Toast.makeText(context, "Voice memo recording ready", Toast.LENGTH_SHORT).show()
-                    }) {
-                        Icon(imageVector = Icons.Default.Mic, contentDescription = "Voice Memo", tint = CMKDeepBlue)
-                    }
-
-                    OutlinedTextField(
-                        value = inputMessage,
-                        onValueChange = { inputMessage = it },
-                        placeholder = { Text("Start a message...", fontSize = 13.sp) },
+                if (isRecordingVoice) {
+                    // --- FACEBOOK MESSENGER STYLE VOICE RECORDING ROW ---
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .testTag("chat_message_input"),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CMKDeepBlue,
-                            unfocusedBorderColor = Color(0xFFCBD5E1),
-                            focusedContainerColor = Color(0xFFF8FAFC),
-                            unfocusedContainerColor = Color(0xFFF8FAFC)
-                        ),
-                        maxLines = 3
-                    )
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        IconButton(
+                            onClick = {
+                                isRecordingVoice = false
+                                recordingSeconds = 0
+                            },
+                            modifier = Modifier.background(Color(0xFFFEE2E2), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Cancel Recording",
+                                tint = Color(0xFFEF4444)
+                            )
+                        }
 
-                    Spacer(modifier = Modifier.width(6.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 12.dp)
+                        ) {
+                            // Pulsing red dot
+                            val transition = rememberInfiniteTransition(label = "pulse")
+                            val alpha by transition.animateFloat(
+                                initialValue = 0.3f,
+                                targetValue = 1f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(600),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "alpha"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFEF4444).copy(alpha = alpha))
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = String.format("ថតសំលេង... %02d:%02d", recordingSeconds / 60, recordingSeconds % 60),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E293B)
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
 
-                    val canSend = (inputMessage.isNotBlank() || selectedChatImageUri != null) && !isSendingImage
-                    IconButton(
-                        onClick = {
-                            if (canSend) {
-                                val textToSend = inputMessage.trim()
-                                val rawImgUri = selectedChatImageUri
-                                inputMessage = ""
-                                selectedChatImageUri = null
-                                
-                                coroutineScope.launch {
-                                    isSendingImage = true
-                                    val processedImage = if (rawImgUri != null) {
-                                        com.example.data.service.MediaUploadService.prepareImageForPublishing(context, rawImgUri)
-                                    } else null
-                                    viewModel.sendChatMessage(
-                                        text = textToSend,
-                                        imageUrl = processedImage,
-                                        threadId = thread.id
+                            // Sound waveform visualizer bars
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                repeat(6) { index ->
+                                    val height = remember(recordingSeconds, index) { (10..24).random().dp }
+                                    Box(
+                                        modifier = Modifier
+                                            .width(3.dp)
+                                            .height(height)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(CMKDeepBlue)
                                     )
-                                    isSendingImage = false
                                 }
                             }
-                        },
-                        enabled = canSend,
-                        modifier = Modifier.background(
-                            if (canSend) CMKDeepBlue else Color(0xFFCBD5E1),
-                            shape = CircleShape
-                        )
-                    ) {
-                        if (isSendingImage) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
+                        }
+
+                        IconButton(
+                            onClick = {
+                                val dur = recordingSeconds
+                                isRecordingVoice = false
+                                recordingSeconds = 0
+                                viewModel.sendChatMessage(
+                                    text = "",
+                                    audioUrl = "voice_memo",
+                                    audioDurationSec = if (dur == 0) 3 else dur,
+                                    threadId = thread.id
+                                )
+                            },
+                            modifier = Modifier.background(CMKDeepBlue, CircleShape)
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Send,
-                                contentDescription = "Send",
-                                tint = if (canSend) Color.White else Color.Gray,
+                                contentDescription = "Send Voice Memo",
+                                tint = Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
+                        }
+                    }
+                } else {
+                    // --- REGULAR CHAT INPUT ROW (AUTO-EXPANDING & FLOATING) ---
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        IconButton(
+                            onClick = {
+                                photoPickerLauncher.launch(
+                                    androidx.activity.result.PickVisualMediaRequest(
+                                        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+                                    )
+                                )
+                            },
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        ) {
+                            Icon(imageVector = Icons.Default.Image, contentDescription = "Attach Photo", tint = CMKDeepBlue)
+                        }
+
+                        IconButton(
+                            onClick = { isRecordingVoice = true },
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        ) {
+                            Icon(imageVector = Icons.Default.Mic, contentDescription = "Voice Memo", tint = CMKDeepBlue)
+                        }
+
+                        // Auto-expanding text input field (minLines = 1, maxLines = 5)
+                        OutlinedTextField(
+                            value = inputMessage,
+                            onValueChange = { inputMessage = it },
+                            placeholder = { Text("សរសេរសារទីនេះ... (Start a message)", fontSize = 13.sp, color = Color.Gray) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("chat_message_input"),
+                            shape = RoundedCornerShape(22.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = CMKDeepBlue,
+                                unfocusedBorderColor = Color(0xFFCBD5E1),
+                                focusedContainerColor = Color(0xFFF8FAFC),
+                                unfocusedContainerColor = Color(0xFFF8FAFC),
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black
+                            ),
+                            minLines = 1,
+                            maxLines = 5,
+                            singleLine = false
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        val hasContent = inputMessage.isNotBlank() || selectedChatImageUri != null
+                        IconButton(
+                            onClick = {
+                                if (hasContent) {
+                                    val textToSend = inputMessage.trim()
+                                    val rawImgUri = selectedChatImageUri
+                                    inputMessage = ""
+                                    selectedChatImageUri = null
+                                    
+                                    coroutineScope.launch {
+                                        isSendingImage = true
+                                        val processedImage = if (rawImgUri != null) {
+                                            com.example.data.service.MediaUploadService.prepareImageForPublishing(context, rawImgUri)
+                                        } else null
+                                        viewModel.sendChatMessage(
+                                            text = textToSend,
+                                            imageUrl = processedImage,
+                                            threadId = thread.id
+                                        )
+                                        isSendingImage = false
+                                    }
+                                } else {
+                                    // Empty input: Send quick Like 👍 sticker (Messenger style)
+                                    viewModel.sendChatMessage(
+                                        text = "👍",
+                                        threadId = thread.id
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterVertically)
+                                .background(
+                                    if (hasContent) CMKDeepBlue else Color(0xFFE2E8F0),
+                                    shape = CircleShape
+                                )
+                        ) {
+                            if (isSendingImage) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            } else if (hasContent) {
+                                Icon(
+                                    imageVector = Icons.Default.Send,
+                                    contentDescription = "Send",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.ThumbUp,
+                                    contentDescription = "Send Like",
+                                    tint = CMKDeepBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -1376,16 +1530,126 @@ fun XConversationThreadView(
             }
         }
     }
+
+    // Message Actions Sheet (Messenger Style: Unsend, Delete, Copy, Reactions)
+    if (selectedMessageForAction != null) {
+        val targetMsg = selectedMessageForAction!!
+        ModalBottomSheet(
+            onDismissRequest = { selectedMessageForAction = null },
+            containerColor = Color.White,
+            dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+            ) {
+                // Emoji Reaction Row (Facebook Messenger style)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFFF1F5F9))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf("❤️", "👍", "😆", "😮", "😢", "😡").forEach { emoji ->
+                        Text(
+                            text = emoji,
+                            fontSize = 26.sp,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable {
+                                    viewModel.reactToMessage(targetMsg.id, emoji)
+                                    selectedMessageForAction = null
+                                }
+                                .padding(4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Copy Text Option
+                if (targetMsg.text.isNotBlank() && !targetMsg.isUnsent) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(targetMsg.text))
+                                Toast.makeText(context, "បានចម្លងអត្ថបទ (Text copied)", Toast.LENGTH_SHORT).show()
+                                selectedMessageForAction = null
+                            }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, tint = Color(0xFF334155))
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Text("ចម្លងអត្ថបទ (Copy Text)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    }
+                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                }
+
+                // Unsend Message Option (Facebook Messenger style)
+                if (!targetMsg.isUnsent) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                viewModel.unsendMessage(targetMsg.id)
+                                Toast.makeText(context, "សារត្រូវបានលុបសម្រាប់អ្នកទាំងអស់គ្នា", Toast.LENGTH_SHORT).show()
+                                selectedMessageForAction = null
+                            }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.Undo, contentDescription = null, tint = Color(0xFFEF4444))
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column {
+                            Text("លុបសារសម្រាប់អ្នកទាំងអស់គ្នា (Unsend)", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFEF4444))
+                            Text("សារនេះនឹងត្រូវលុបចេញពីប្រអប់ឆាតរបស់អ្នកទាំងសងខាង", fontSize = 11.sp, color = Color.Gray)
+                        }
+                    }
+                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                }
+
+                // Delete for Me Option
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            viewModel.deleteChatMessage(targetMsg.id)
+                            Toast.makeText(context, "បានលុបសារចេញពីឧបករណ៍ (Deleted for me)", Toast.LENGTH_SHORT).show()
+                            selectedMessageForAction = null
+                        }
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = Color(0xFF64748B))
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Text("លុបចេញពីឧបករណ៍ខ្ញុំ (Delete for me)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color(0xFF64748B))
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    }
 }
 
 @Composable
 fun ChatBubble(
     message: ChatMessage,
     isMe: Boolean,
-    onImageClick: ((String) -> Unit)? = null
+    onImageClick: ((String) -> Unit)? = null,
+    onMessageClick: ((ChatMessage) -> Unit)? = null
 ) {
     val formatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
     val timeStr = remember(message.timestamp) { formatter.format(Date(message.timestamp)) }
+    var isPlayingVoice by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -1405,59 +1669,163 @@ fun ChatBubble(
 
         Box(
             modifier = Modifier
-                .widthIn(max = 280.dp)
-                .background(
-                    color = if (isMe) CMKDeepBlue else Color.White,
-                    shape = RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isMe) 16.dp else 4.dp,
-                        bottomEnd = if (isMe) 4.dp else 16.dp
+                .widthIn(max = 290.dp)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 18.dp,
+                        topEnd = 18.dp,
+                        bottomStart = if (isMe) 18.dp else 4.dp,
+                        bottomEnd = if (isMe) 4.dp else 18.dp
                     )
                 )
-                .padding(horizontal = 10.dp, vertical = 8.dp)
+                .background(
+                    color = if (message.isUnsent) Color(0xFFE2E8F0)
+                            else if (isMe) CMKDeepBlue
+                            else Color.White
+                )
+                .clickable { onMessageClick?.invoke(message) }
+                .padding(horizontal = 12.dp, vertical = 9.dp)
         ) {
             Column {
-                if (!message.imageUrl.isNullOrBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onImageClick?.invoke(message.imageUrl) }
+                if (message.isUnsent) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 2.dp)
                     ) {
-                        coil.compose.AsyncImage(
-                            model = message.imageUrl,
-                            contentDescription = "Chat photo",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 120.dp, max = 220.dp),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        Icon(
+                            imageVector = Icons.Default.Block,
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "សារត្រូវបានលុប (Unsent message)",
+                            fontSize = 12.sp,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            color = Color.Gray
                         )
                     }
-                    if (message.text.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                    }
-                }
+                } else {
+                    // Voice Memo Attachment Bubble
+                    if (message.audioUrl != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            IconButton(
+                                onClick = { isPlayingVoice = !isPlayingVoice },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(
+                                        if (isMe) Color.White.copy(alpha = 0.2f) else CMKDeepBlue.copy(alpha = 0.1f),
+                                        CircleShape
+                                    )
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlayingVoice) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = "Play/Pause Voice",
+                                    tint = if (isMe) Color.White else CMKDeepBlue,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            
+                            // Sound waveform visual lines
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                repeat(12) { i ->
+                                    val h = listOf(8, 16, 24, 12, 20, 28, 14, 22, 10, 18, 26, 14)[i % 12].dp
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(h)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(
+                                                if (isPlayingVoice) (if (isMe) CMKGoldAccent else CMKDeepBlue)
+                                                else (if (isMe) Color.White.copy(alpha = 0.6f) else Color.Gray)
+                                            )
+                                    )
+                                }
+                            }
 
-                if (message.text.isNotBlank()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            val durStr = String.format("0:%02d", if (message.audioDurationSec == 0) 5 else message.audioDurationSec)
+                            Text(
+                                text = durStr,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isMe) Color.White else Color(0xFF334155)
+                            )
+                        }
+                    }
+
+                    // Image Attachment
+                    if (!message.imageUrl.isNullOrBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onImageClick?.invoke(message.imageUrl) }
+                        ) {
+                            coil.compose.AsyncImage(
+                                model = message.imageUrl,
+                                contentDescription = "Chat photo",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 120.dp, max = 220.dp),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
+                        }
+                        if (message.text.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                    }
+
+                    // Text Message
+                    if (message.text.isNotBlank()) {
+                        Text(
+                            text = message.text,
+                            color = if (isMe) Color.White else Color(0xFF0F172A),
+                            fontSize = 14.sp,
+                            lineHeight = 19.sp,
+                            modifier = Modifier.padding(horizontal = 2.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = message.text,
-                        color = if (isMe) Color.White else Color(0xFF0F172A),
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        text = timeStr,
+                        fontSize = 9.sp,
+                        color = if (isMe) Color.LightGray else Color.Gray,
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(horizontal = 2.dp)
                     )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = timeStr,
-                    fontSize = 9.sp,
-                    color = if (isMe) Color.LightGray else Color.Gray,
+            // Emoji Reaction Badge
+            if (message.reaction != null) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White,
+                    shadowElevation = 2.dp,
                     modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(horizontal = 4.dp)
-                )
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 6.dp, y = 6.dp)
+                ) {
+                    Text(
+                        text = message.reaction,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
             }
         }
     }
@@ -1920,10 +2288,11 @@ fun XChatSettingsSheet(
                 "Communities" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Communities (ក្រុម/សហគមន៍)", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Communities (ក្រុម/សហគមន៍)", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column {
-                                Text("ក្រុមសហគមន៍សំណង់ និងសម្ភារៈសាងសង់សកម្ម៖", fontSize = 12.sp, color = Color.Gray)
+                                Text("ក្រុមសហគមន៍សំណង់ និងសម្ភារៈសាងសង់សកម្ម៖", fontSize = 12.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(10.dp))
                                 CommunityItem("🏗️ CMK Concrete Builders Club", "1,240 Members")
                                 CommunityItem("🔩 Cambodia Steel Dealers Association", "850 Members")
@@ -1940,14 +2309,15 @@ fun XChatSettingsSheet(
                 "Support" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Support (ជំនួយ)", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Support (ជំនួយ)", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column {
-                                Text("ទាក់ទងមកកាន់ក្រុមការងារគាំទ្រ CMK 24/7:", fontSize = 13.sp)
+                                Text("ទាក់ទងមកកាន់ក្រុមការងារគាំទ្រ CMK 24/7:", fontSize = 13.sp, color = Color.Black)
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("📞 Hotline: 023 888 999 / 012 345 678", fontWeight = FontWeight.Bold, color = CMKGoldAccent)
-                                Text("📧 Email: support@cmk-construction.com", fontSize = 12.sp, color = Color.Gray)
-                                Text("💬 Live Support: Available in Direct Chat", fontSize = 12.sp, color = Color.Gray)
+                                Text("📞 Hotline: 023 888 999 / 012 345 678", fontWeight = FontWeight.Bold, color = CMKDeepBlue)
+                                Text("📧 Email: support@cmk-construction.com", fontSize = 12.sp, color = Color.DarkGray)
+                                Text("💬 Live Support: Available in Direct Chat", fontSize = 12.sp, color = Color.DarkGray)
                             }
                         },
                         confirmButton = {
@@ -1960,10 +2330,11 @@ fun XChatSettingsSheet(
                 "Requests" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Message requests (សំណើសារ)", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Message requests (សំណើសារ)", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column {
-                                Text("សំណើសារពីគណនីដែលមិនទាន់បានរាប់អានជាមិត្ត៖", fontSize = 12.sp, color = Color.Gray)
+                                Text("សំណើសារពីគណនីដែលមិនទាន់បានរាប់អានជាមិត្ត៖", fontSize = 12.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1971,8 +2342,8 @@ fun XChatSettingsSheet(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column {
-                                        Text("Eric Rodriguez (@eric_contractor)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        Text("Hi, do you deliver rebar to Kampot?", fontSize = 11.sp, color = Color.Gray)
+                                        Text("Eric Rodriguez (@eric_contractor)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
+                                        Text("Hi, do you deliver rebar to Kampot?", fontSize = 11.sp, color = Color.DarkGray)
                                     }
                                     Button(onClick = {
                                         Toast.makeText(context, "Accepted message request from Eric", Toast.LENGTH_SHORT).show()
@@ -1991,9 +2362,10 @@ fun XChatSettingsSheet(
                 "Archive" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Archive (ប្រអប់ផ្ទុកសារចាស់ៗ)", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Archive (ប្រអប់ផ្ទុកសារចាស់ៗ)", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
-                            Text("គ្មានសារចាស់ៗដែលបានលាក់ទុកក្នុង Archive ទេ (0 Archived Chats).", fontSize = 13.sp, color = Color.Gray)
+                            Text("គ្មានសារចាស់ៗដែលបានលាក់ទុកក្នុង Archive ទេ (0 Archived Chats).", fontSize = 13.sp, color = Color.DarkGray)
                         },
                         confirmButton = {
                             Button(onClick = { activeDialog = null }, colors = ButtonDefaults.buttonColors(containerColor = CMKDeepBlue)) {
@@ -2005,14 +2377,15 @@ fun XChatSettingsSheet(
                 "FriendRequests" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Friend Requests (សំណើរសុំរាប់អាន)", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Friend Requests (សំណើរសុំរាប់អាន)", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column {
-                                Text("សំណើរសុំរាប់អានជាមិត្តថ្មី (3):", fontSize = 12.sp, color = Color.Gray)
+                                Text("សំណើរសុំរាប់អានជាមិត្តថ្មី (3):", fontSize = 12.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("1. Voleak Steel Mart (@voleak_steel)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                Text("2. Somnang Construction (@somnang_build)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                Text("3. Kirirom Hardware Depot (@kirirom_depot)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("1. Voleak Steel Mart (@voleak_steel)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
+                                Text("2. Somnang Construction (@somnang_build)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
+                                Text("3. Kirirom Hardware Depot (@kirirom_depot)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
                             }
                         },
                         confirmButton = {
@@ -2028,9 +2401,10 @@ fun XChatSettingsSheet(
                 "ChannelInvites" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Channel Invites", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Channel Invites", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
-                            Text("ការអញ្ជើញចូលរួមក្នុង Broadcast Channel៖\n📢 CMK Steel Daily Price Official Channel", fontSize = 13.sp)
+                            Text("ការអញ្ជើញចូលរួមក្នុង Broadcast Channel៖\n📢 CMK Steel Daily Price Official Channel", fontSize = 13.sp, color = Color.Black)
                         },
                         confirmButton = {
                             Button(onClick = {
@@ -2045,9 +2419,10 @@ fun XChatSettingsSheet(
                 "Moments" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Moments (ទិដ្ឋភាពប្រចាំថ្ងៃ)", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Moments (ទិដ្ឋភាពប្រចាំថ្ងៃ)", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
-                            Text("📸 បង្ហោះរូបភាព ឬមើលវីដេអូខ្លីៗពីការដ្ឋានសំណង់ប្រចាំថ្ងៃ។ មុខងាររៀបចំរួចរាល់ 100%!", fontSize = 13.sp)
+                            Text("📸 បង្ហោះរូបភាព ឬមើលវីដេអូខ្លីៗពីការដ្ឋានសំណង់ប្រចាំថ្ងៃ។ មុខងាររៀបចំរួចរាល់ 100%!", fontSize = 13.sp, color = Color.Black)
                         },
                         confirmButton = {
                             Button(onClick = { activeDialog = null }, colors = ButtonDefaults.buttonColors(containerColor = CMKDeepBlue)) {
@@ -2059,10 +2434,11 @@ fun XChatSettingsSheet(
                 "SwitchProfile" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Switch Profile / Accounts", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Switch Profile / Accounts", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column {
-                                Text("ជ្រើសរើសគណនីប្រើប្រាស់៖", fontSize = 12.sp, color = Color.Gray)
+                                Text("ជ្រើសរើសគណនីប្រើប្រាស់៖", fontSize = 12.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(10.dp))
                                 ProfileOption("Mr. MAKAR CH (Personal)", "@CHHUOYMAKARA64", true)
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -2079,9 +2455,10 @@ fun XChatSettingsSheet(
                 "FamilyCenter" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Family Center (មជ្ឈមណ្ឌលគ្រួសារ)", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Family Center (មជ្ឈមណ្ឌលគ្រួសារ)", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
-                            Text("👨‍👩‍👧‍👦 ភ្ជាប់គណនីអាណាព្យាបាលដើម្បីគ្រប់គ្រងសុវត្ថិភាព និងកំណត់ពេលវេលាប្រើប្រាស់ App របស់កូនៗ។", fontSize = 13.sp)
+                            Text("👨‍👩‍👧‍👦 ភ្ជាប់គណនីអាណាព្យាបាលដើម្បីគ្រប់គ្រងសុវត្ថិភាព និងកំណត់ពេលវេលាប្រើប្រាស់ App របស់កូនៗ។", fontSize = 13.sp, color = Color.Black)
                         },
                         confirmButton = {
                             Button(onClick = { activeDialog = null }, colors = ButtonDefaults.buttonColors(containerColor = CMKDeepBlue)) {
@@ -2093,10 +2470,11 @@ fun XChatSettingsSheet(
                 "Avatar" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("3D Avatar Editor", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("3D Avatar Editor", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                                Text("🎨 រូបតំណាង 3D តំណាងឱ្យខ្លួនឯងក្នុងសហគមន៍សំណង់ CMK", fontSize = 12.sp, color = Color.Gray)
+                                Text("🎨 រូបតំណាង 3D តំណាងឱ្យខ្លួនឯងក្នុងសហគមន៍សំណង់ CMK", fontSize = 12.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Box(
                                     modifier = Modifier
@@ -2108,7 +2486,7 @@ fun XChatSettingsSheet(
                                     Icon(imageVector = Icons.Default.Engineering, contentDescription = null, tint = Color.Black, modifier = Modifier.size(40.dp))
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("Safety Helmet + Construction Vest Avatar", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("Safety Helmet + Construction Vest Avatar", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
                             }
                         },
                         confirmButton = {
@@ -2124,10 +2502,11 @@ fun XChatSettingsSheet(
                 "AppIcon" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("App Icon Theme Selector", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("App Icon Theme Selector", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column {
-                                Text("ជ្រើសរើស Logo App នៅលើអេក្រង់ទូរស័ព្ទ៖", fontSize = 12.sp, color = Color.Gray)
+                                Text("ជ្រើសរើស Logo App នៅលើអេក្រង់ទូរស័ព្ទ៖", fontSize = 12.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(10.dp))
                                 IconOption("Classic CMK Blue Icon", "Default Official", true)
                                 IconOption("Gold VIP Shield Icon", "Pro Member", false)
@@ -2147,16 +2526,24 @@ fun XChatSettingsSheet(
                 "BugReport" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Report Technical Problem", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Report Technical Problem", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column {
-                                Text("រាយការណ៍បញ្ហាបច្ចេកទេស ឬ Bug មកកាន់ក្រុមការងារ IT CMK:", fontSize = 12.sp, color = Color.Gray)
+                                Text("រាយការណ៍បញ្ហាបច្ចេកទេស ឬ Bug មកកាន់ក្រុមការងារ IT CMK:", fontSize = 12.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedTextField(
                                     value = bugDescription,
                                     onValueChange = { bugDescription = it },
                                     placeholder = { Text("Describe the technical issue here...") },
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.Black,
+                                        unfocusedTextColor = Color.Black,
+                                        focusedContainerColor = Color(0xFFF8FAFC),
+                                        unfocusedContainerColor = Color(0xFFF8FAFC)
+                                    ),
+                                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontSize = 14.sp)
                                 )
                             }
                         },
@@ -2179,16 +2566,17 @@ fun XChatSettingsSheet(
                 "Help" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Help & User Guide (ជំនួយ)", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Help & User Guide (ជំនួយ)", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column {
-                                Text("📘 របៀបប្រើប្រាស់កម្មវិធី និងសំណួរញឹកញាប់ (FAQ):", fontSize = 12.sp, color = Color.Gray)
+                                Text("📘 របៀបប្រើប្រាស់កម្មវិធី និងសំណួរញឹកញាប់ (FAQ):", fontSize = 12.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("• Q: របៀបផ្ញើសារសួើតម្លៃសម្ភារៈសំណង់?", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text("  A: ចុចប៊ូតុង + នៅជ្រុងខាងក្រោមដើម្បីបង្កើតឆាតថ្មី។", fontSize = 11.sp, color = Color.Gray)
+                                Text("• Q: របៀបផ្ញើសារសួើតម្លៃសម្ភារៈសំណង់?", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+                                Text("  A: ចុចប៊ូតុង + នៅជ្រុងខាងក្រោមដើម្បីបង្កើតឆាតថ្មី។", fontSize = 11.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("• Q: តើអាចបង្កើតក្រុមការដ្ឋានបានទេ?", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text("  A: បាន! ចុច New Message រួចជ្រើសរើស Create a group។", fontSize = 11.sp, color = Color.Gray)
+                                Text("• Q: តើអាចបង្កើតក្រុមការដ្ឋានបានទេ?", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+                                Text("  A: បាន! ចុច New Message រួចជ្រើសរើស Create a group។", fontSize = 11.sp, color = Color.DarkGray)
                             }
                         },
                         confirmButton = {
@@ -2201,14 +2589,15 @@ fun XChatSettingsSheet(
                 "Legal" -> {
                     AlertDialog(
                         onDismissRequest = { activeDialog = null },
-                        title = { Text("Legal & Policies", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                        containerColor = Color.White,
+                        title = { Text("Legal & Policies", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.Black) },
                         text = {
                             Column {
-                                Text("📜 លក្ខខណ្ឌច្បាប់ និងគោលការណ៍រក្សាការសម្ងាត់:", fontSize = 12.sp, color = Color.Gray)
+                                Text("📜 លក្ខខណ្ឌច្បាប់ និងគោលការណ៍រក្សាការសម្ងាត់:", fontSize = 12.sp, color = Color.DarkGray)
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("1. Terms of Service (លក្ខខណ្ឌប្រើប្រាស់)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text("2. Privacy Policy & Data Protection (គោលការណ៍ឯកជនភាព)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text("3. ISO 27001 Security Standard Compliant", fontSize = 11.sp, color = CMKGoldAccent)
+                                Text("1. Terms of Service (លក្ខខណ្ឌប្រើប្រាស់)", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+                                Text("2. Privacy Policy & Data Protection (គោលការណ៍ឯកជនភាព)", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+                                Text("3. ISO 27001 Security Standard Compliant", fontSize = 11.sp, color = CMKDeepBlue, fontWeight = FontWeight.Bold)
                             }
                         },
                         confirmButton = {
@@ -2415,8 +2804,8 @@ fun ActiveNowOnlineBar(
             Text(
                 text = "${onlineUsers.size - 1} នាក់ Online",
                 fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF64748B)
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E293B)
             )
         }
 

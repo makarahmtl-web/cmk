@@ -67,6 +67,10 @@ data class ChatMessage(
     val senderName: String,
     val text: String,
     val imageUrl: String? = null,
+    val audioUrl: String? = null,
+    val audioDurationSec: Int = 0,
+    val isUnsent: Boolean = false,
+    val reaction: String? = null,
     val threadId: String? = null,
     val timestamp: Long = System.currentTimeMillis()
 )

@@ -57,6 +57,10 @@ import com.example.ui.viewmodel.MainViewModel
 fun ProfileScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val user by viewModel.currentUserSession.collectAsState()
+    val allPosts by viewModel.feedPosts.collectAsState()
+    val userPosts = remember(allPosts, user) {
+        allPosts.filter { it.userId == user?.uid || (user?.displayName.isNullOrEmpty().not() && it.userDisplayName == user?.displayName) }
+    }
     val hasPasscode by viewModel.hasPasscode.collectAsState()
     var isSettingPasscode by remember { mutableStateOf(false) }
 
@@ -148,7 +152,11 @@ fun ProfileScreen(viewModel: MainViewModel) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(240.dp)
-                                    .background(Color(0xFFCBD5E1))
+                                    .background(Color(0xFFE2E8F0))
+                                    .clickable {
+                                        coverPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                    },
+                                contentAlignment = Alignment.Center
                             ) {
                                 if (!user?.coverUrl.isNullOrEmpty()) {
                                     AsyncImage(
@@ -161,55 +169,35 @@ fun ProfileScreen(viewModel: MainViewModel) {
                                         contentScale = ContentScale.Crop
                                     )
                                 } else {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.cmk_cover_photo_1788675355472),
-                                        contentDescription = "Default Cover Banner",
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                }
-
-                                // Dark gradient scrim for badge contrast
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.verticalGradient(
-                                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f)),
-                                                startY = 100f
-                                            )
-                                        )
-                                )
-
-                                // Camera Button on Cover (Facebook style)
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color.Black.copy(alpha = 0.65f),
-                                    shadowElevation = 4.dp,
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(end = 16.dp, bottom = 14.dp)
-                                        .clip(CircleShape)
-                                        .clickable { showCoverOptionsDialog = true }
-                                        .testTag("btn_edit_cover")
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    // Light white-grey empty cover placeholder with Add Cover button
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.PhotoCamera,
-                                            contentDescription = "Change Cover",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "Cover",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = Color.White.copy(alpha = 0.95f),
+                                            shadowElevation = 3.dp
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.AddAPhoto,
+                                                    contentDescription = "Add Cover",
+                                                    tint = CMKDeepBlue,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    "ជ្រើសរើសរូបភាព Cover (Add Cover Photo)",
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = CMKDeepBlue
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -217,7 +205,7 @@ fun ProfileScreen(viewModel: MainViewModel) {
                             // Spacer for the avatar offset
                             Spacer(modifier = Modifier.height(56.dp))
 
-                            // Name, Verified Badge, and Bio below avatar
+                            // Name and Bio below avatar
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -234,13 +222,6 @@ fun ProfileScreen(viewModel: MainViewModel) {
                                         fontSize = 22.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color(0xFF0F172A)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Verified Partner",
-                                        tint = Color(0xFF1877F2), // Facebook Blue Verified Badge
-                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
 
@@ -313,32 +294,6 @@ fun ProfileScreen(viewModel: MainViewModel) {
                                             color = CMKGoldAccent
                                         )
                                     }
-                                }
-                            }
-
-                            // Camera button overlay on Avatar (Facebook style)
-                            Surface(
-                                shape = CircleShape,
-                                color = Color(0xFFF1F5F9),
-                                shadowElevation = 4.dp,
-                                border = BorderStroke(2.dp, Color.White),
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .size(34.dp)
-                                    .clip(CircleShape)
-                                    .clickable { showAvatarOptionsDialog = true }
-                                    .testTag("btn_edit_avatar")
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PhotoCamera,
-                                        contentDescription = "Edit Profile Picture",
-                                        tint = Color(0xFF0F172A),
-                                        modifier = Modifier.size(17.dp)
-                                    )
                                 }
                             }
                         }
@@ -623,7 +578,6 @@ fun ProfileScreen(viewModel: MainViewModel) {
                             }
                             IntroDetailRow(icon = Icons.Default.CalendarMonth, boldText = "បានចូលរួមនៅ៖", regularText = joinedDate)
                             IntroDetailRow(icon = Icons.Default.Email, boldText = "អ៊ីមែលផ្លូវការ៖", regularText = email)
-                            IntroDetailRow(icon = Icons.Default.VerifiedUser, boldText = "ស្ថានភាពគណនី៖", regularText = "Verified Business Partner", accentColor = SafeGreen)
                         }
                     }
                 }
@@ -700,141 +654,71 @@ fun ProfileScreen(viewModel: MainViewModel) {
                 // 6. Dynamic Content Based on Selected Tab
                 when (selectedTab) {
                     0 -> { // Posts Tab
-                        items(listOf(
-                            PostItemData(
-                                title = "High-Tensile Rebars Shipment Arrived",
-                                body = "Our latest batch of SD390/SD400 industrial reinforcement steel bars has been completely offloaded at Depot 4. Available for immediate wholesale distribution.",
-                                time = "2 hours ago",
-                                imageUrl = "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=400"
-                            ),
-                            PostItemData(
-                                title = "Q3 Wholesale Cement Pricing Slate",
-                                body = "We have adjusted the bulk cement price brackets for our corporate partners. Please log in to download the authorized digital wholesale sheet.",
-                                time = "Yesterday",
-                                imageUrl = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=400"
-                            ),
-                            PostItemData(
-                                title = "Central Depot Storage Scaling Projects",
-                                body = "Finalized structural foundations for the new 5,000 sqm covered bulk storage hangar near National Road 4. Optimizing our rapid delivery response.",
-                                time = "3 days ago",
-                                imageUrl = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=400"
-                            )
-                        )) { post ->
-                            PostTabItem(post)
-                        }
-                    }
-                    1 -> { // Videos Tab
-                        items(listOf(
-                            VideoItemData(
-                                title = "Depot Drone Footage: Bulk Storage Operations",
-                                duration = "0:45 mins",
-                                views = "1.2k views",
-                                imageUrl = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=400"
-                            ),
-                            VideoItemData(
-                                title = "Safety First: Crane Rebar Offloading Guide",
-                                duration = "1:20 mins",
-                                views = "840 views",
-                                imageUrl = "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=400"
-                            )
-                        )) { video ->
-                            VideoTabItem(video)
-                        }
-                    }
-                    2 -> { // Shares Tab
-                        items(listOf(
-                            ShareItemData(
-                                author = "Ministry of Commerce (Cambodia)",
-                                text = "National construction raw material import index has advanced by 14% this quarter, highlighting robust momentum in public housing infrastructure development projects.",
-                                time = "5 hours ago"
-                            ),
-                            ShareItemData(
-                                author = "Architects & Constructors Digest",
-                                text = "Sustainable structural architecture begins with certified steel and low-carbon cement integrations. Explore our top green builder recommendations.",
-                                time = "2 days ago"
-                            )
-                        )) { share ->
-                            ShareTabItem(share)
-                        }
-                    }
-                    3 -> { // Drafts Tab (Locked content)
-                        items(listOf(
-                            DraftItemData(
-                                title = "CONFIDENTIAL: Q4 Corporate Partner Rates.xlsx",
-                                type = "Secure Spreadsheet Document",
-                                size = "2.4 MB"
-                            ),
-                            DraftItemData(
-                                title = "Draft: Port of Sihanoukville Logistics Contract.pdf",
-                                type = "Draft PDF Contract Agreement",
-                                size = "1.1 MB"
-                            )
-                        )) { draft ->
-                            DraftTabItem(draft)
-                        }
-                    }
-                    4 -> { // Likes Tab
-                        items(listOf(
-                            LikedItemData(
-                                title = "Sihanoukville Deep Sea Port Expansion Updates",
-                                category = "National Infrastructure",
-                                likesCount = "2.4k Likes"
-                            ),
-                            LikedItemData(
-                                title = "Best Standards for Concrete Compressive Strengths",
-                                category = "Material Quality Standards",
-                                likesCount = "920 Likes"
-                            )
-                        )) { liked ->
-                            LikedTabItem(liked)
-                        }
-                    }
-                    5 -> { // Saved Tab
-                        item {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        "SAVED DEPOT COORDINATES",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = CMKDeepBlue,
-                                        letterSpacing = 1.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    ContactCoordinateRow(
-                                        icon = Icons.Default.LocationOn,
-                                        title = "Phnom Penh Headquarters",
-                                        subtitle = "National Road 4, Choam Chao, Phnom Penh, Cambodia"
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    ContactCoordinateRow(
-                                        icon = Icons.Default.SupportAgent,
-                                        title = "Wholesale Inquiries Line",
-                                        subtitle = "+855 (0) 23 999 111 / sales@cmkmaterials.com"
+                        if (userPosts.isEmpty()) {
+                            item {
+                                EmptyTabState(
+                                    icon = Icons.Default.Article,
+                                    title = "មិនទាន់មានការផុសព័ត៌មាននៅឡើយទេ",
+                                    subtitle = "បង្កើតការផុសដំបូងរបស់អ្នក ដើម្បីចែករំលែកព័ត៌មានជាមួយដៃគូ!"
+                                )
+                            }
+                        } else {
+                            items(userPosts, key = { it.id }) { post ->
+                                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                                    PostItemCard(
+                                        post = post,
+                                        currentUserId = user?.uid,
+                                        onLike = { viewModel.toggleLike(post.id) },
+                                        onCommentClick = { viewModel.setCommentPostId(post.id) },
+                                        onBlockUser = { viewModel.blockUser(post.userDisplayName) }
                                     )
                                 }
                             }
                         }
-                        items(listOf(
-                            SavedItemData(
-                                title = "Corporate Tax Invoice Template v2",
-                                category = "Accounting & Finance",
-                                dateSaved = "Saved 1 week ago"
-                            ),
-                            SavedItemData(
-                                title = "ASTM International Rebar Compliance Certificate",
-                                category = "Compliance Certificates",
-                                dateSaved = "Saved 2 weeks ago"
+                    }
+                    1 -> { // Videos Tab
+                        item {
+                            EmptyTabState(
+                                icon = Icons.Default.OndemandVideo,
+                                title = "មិនទាន់មានវីដេអូនៅឡើយទេ",
+                                subtitle = "វីដេអូដែលអ្នកបានបង្ហោះនឹងបង្ហាញនៅទីនេះ"
                             )
-                        )) { saved ->
-                            SavedTabItem(saved)
+                        }
+                    }
+                    2 -> { // Shares Tab
+                        item {
+                            EmptyTabState(
+                                icon = Icons.Default.Share,
+                                title = "មិនទាន់មានការចែករំលែកនៅឡើយទេ",
+                                subtitle = "អត្ថបទដែលអ្នកបានចែករំលែកនឹងបង្ហាញនៅទីនេះ"
+                            )
+                        }
+                    }
+                    3 -> { // Drafts Tab
+                        item {
+                            EmptyTabState(
+                                icon = Icons.Default.Lock,
+                                title = "មិនទាន់មានសេចក្តីព្រាងនៅឡើយទេ",
+                                subtitle = "ឯកសារ និងសេចក្តីព្រាងដែលបានរក្សាទុកនឹងបង្ហាញនៅទីនេះ"
+                            )
+                        }
+                    }
+                    4 -> { // Likes Tab
+                        item {
+                            EmptyTabState(
+                                icon = Icons.Default.Favorite,
+                                title = "មិនទាន់មានការចូលចិត្តនៅឡើយទេ",
+                                subtitle = "អត្ថបទដែលអ្នកបានចូលចិត្តនឹងបង្ហាញនៅទីនេះ"
+                            )
+                        }
+                    }
+                    5 -> { // Saved Tab
+                        item {
+                            EmptyTabState(
+                                icon = Icons.Default.Bookmark,
+                                title = "មិនទាន់មានទិន្នន័យដែលបានរក្សាទុកនៅឡើយទេ",
+                                subtitle = "ទីតាំង និងឯកសារដែលបានរក្សាទុកនឹងបង្ហាញនៅទីនេះ"
+                            )
                         }
                     }
                 }
@@ -874,10 +758,11 @@ fun ProfileScreen(viewModel: MainViewModel) {
         )
     }
 
-    // === Dialog 2: Cover Photo Options (Device Gallery Picker / Presets) ===
+    // === Dialog 2: Cover Photo Options (Device Gallery Picker) ===
     if (showCoverOptionsDialog) {
         AlertDialog(
             onDismissRequest = { showCoverOptionsDialog = false },
+            containerColor = Color.White,
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = CMKDeepBlue)
@@ -887,7 +772,7 @@ fun ProfileScreen(viewModel: MainViewModel) {
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("ជ្រើសរើសរូបភាពពីទូរស័ព្ទរបស់អ្នក ឬជ្រើសរើសគំរូស្ថាបត្យកម្ម៖", fontSize = 13.sp, color = Color.Gray)
+                    Text("ជ្រើសរើសរូបភាពពីទូរស័ព្ទរបស់អ្នកសម្រាប់ទំព័រប្រវត្តិរូប៖", fontSize = 13.sp, color = Color.Gray)
 
                     // Pick from device button
                     Button(
@@ -901,28 +786,23 @@ fun ProfileScreen(viewModel: MainViewModel) {
                     ) {
                         Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("ជ្រើសរើសរូបពីទូរស័ព្ទ (Pick from Gallery)", fontWeight = FontWeight.Bold)
+                        Text("ជ្រើសរើសរូបពី Gallery (Pick from Gallery)", fontWeight = FontWeight.Bold)
                     }
 
-                    Divider(modifier = Modifier.padding(vertical = 4.dp), color = Color(0xFFE2E8F0))
-
-                    Text("គំរូរូបភាពស្ថាបត្យកម្ម (Architectural Presets):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF475569))
-
-                    listOf(
-                        "សំណង់ដែកថែបមាស (Golden Steel)" to "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=600",
-                        "អគារកញ្ចក់ពាណិជ្ជកម្ម (Glass Tower)" to "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=600",
-                        "ឃ្លាំងស្តុកគ្រឿងសំណង់ (Supply Depot)" to "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=600"
-                    ).forEach { (name, url) ->
+                    if (!user?.coverUrl.isNullOrEmpty()) {
                         OutlinedButton(
                             onClick = {
-                                viewModel.updateProfileCover(url)
+                                viewModel.updateProfileCover(null)
                                 showCoverOptionsDialog = false
-                                Toast.makeText(context, "Cover photo updated!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "បានលុបរូបភាព Cover រួចរាល់!", Toast.LENGTH_SHORT).show()
                             },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(name, fontSize = 12.sp, color = CMKDeepBlue)
+                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("លុបរូបភាព Cover (Remove Cover Photo)", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -936,10 +816,11 @@ fun ProfileScreen(viewModel: MainViewModel) {
         )
     }
 
-    // === Dialog 3: Avatar Options (Device Gallery Picker / Presets) ===
+    // === Dialog 3: Avatar Options (Device Gallery Picker) ===
     if (showAvatarOptionsDialog) {
         AlertDialog(
             onDismissRequest = { showAvatarOptionsDialog = false },
+            containerColor = Color.White,
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AccountCircle, contentDescription = null, tint = CMKDeepBlue)
@@ -963,28 +844,23 @@ fun ProfileScreen(viewModel: MainViewModel) {
                     ) {
                         Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("ជ្រើសរើសរូបពីទូរស័ព្ទ (Pick from Gallery)", fontWeight = FontWeight.Bold)
+                        Text("ជ្រើសរើសរូបពី Gallery (Pick from Gallery)", fontWeight = FontWeight.Bold)
                     }
 
-                    Divider(modifier = Modifier.padding(vertical = 4.dp), color = Color(0xFFE2E8F0))
-
-                    Text("គំរូរូបភាពអាជីព (Corporate Presets):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF475569))
-
-                    listOf(
-                        "អ្នកគ្រប់គ្រងប្រតិបត្តិការ (Operations Lead)" to "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200",
-                        "អ្នកជំនាញដឹកជញ្ជូន (Logistics Lead)" to "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200",
-                        "អ្នកគ្រប់គ្រងការដ្ឋាន (Site Manager)" to "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200"
-                    ).forEach { (name, url) ->
+                    if (!user?.avatarUrl.isNullOrEmpty()) {
                         OutlinedButton(
                             onClick = {
-                                viewModel.updateProfileAvatar(url)
+                                viewModel.updateProfileAvatar(null)
                                 showAvatarOptionsDialog = false
-                                Toast.makeText(context, "Profile picture updated!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "បានលុបរូបថត Profile រួចរាល់!", Toast.LENGTH_SHORT).show()
                             },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(name, fontSize = 12.sp, color = CMKDeepBlue)
+                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("លុបរូបថត Profile (Remove Avatar)", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1160,25 +1036,46 @@ fun EditProfileModal(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(120.dp)
+                                .height(130.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFCBD5E1))
-                                .clickable { onPickCover() }
+                                .background(Color(0xFFF1F5F9))
+                                .border(BorderStroke(1.dp, Color(0xFFCBD5E1)), RoundedCornerShape(12.dp))
+                                .clickable { onPickCover() },
+                            contentAlignment = Alignment.Center
                         ) {
                             if (!currentSession.coverUrl.isNullOrEmpty()) {
                                 AsyncImage(
                                     model = currentSession.coverUrl,
-                                    contentDescription = null,
+                                    contentDescription = "Cover Photo",
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
                             } else {
-                                Image(
-                                    painter = painterResource(id = R.drawable.cmk_cover_photo_1788675355472),
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(42.dp)
+                                            .background(Color.White, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.AddAPhoto,
+                                            contentDescription = null,
+                                            tint = CMKDeepBlue,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        "ជ្រើសរើសរូបភាព Cover (Select Cover Photo)",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF475569)
+                                    )
+                                }
                             }
                         }
                     }
@@ -1296,6 +1193,50 @@ fun EditProfileModal(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+}
+
+@Composable
+fun EmptyTabState(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 36.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = Color(0xFFE2E8F0),
+            modifier = Modifier.size(64.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color(0xFF64748B),
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = title,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0F172A)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = subtitle,
+            fontSize = 12.sp,
+            color = Color(0xFF64748B),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }
 

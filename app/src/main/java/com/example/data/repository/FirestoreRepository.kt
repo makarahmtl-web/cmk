@@ -49,24 +49,7 @@ class FirestoreRepository {
         _materialCatalogueState.value = _materialCatalogueState.value + item
     }
 
-    private val initialCatalogue: List<MaterialItem> = listOf(
-        MaterialItem(
-            name = "Premium Italian Porcelain Floor Tiles (60x60)",
-            category = MaterialCategory.BRICKS_TILES,
-            imageUrl = "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=400",
-            specDetails = "Grade A++ Double Loading Porcelain, Matte Anti-Slip Finish, Rectified Edge.",
-            bulkPrice = "$14.50 / Box (4 pcs / 1.44 m²)",
-            availability = "In Stock"
-        ),
-        MaterialItem(
-            name = "Sleek Matte Black Smart Toilet System",
-            category = MaterialCategory.BATHROOM_PLUMBING,
-            imageUrl = "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&q=80&w=400",
-            specDetails = "Dual-flush eco-friendly tech, heated seat, auto deodorizer, touchless remote controls.",
-            bulkPrice = "$380.00 / Unit (Inquire for dealer pricing)",
-            availability = "In Stock"
-        )
-    )
+    private val initialCatalogue: List<MaterialItem> = emptyList()
 
     init {
         _materialCatalogueState.value = initialCatalogue
@@ -482,6 +465,8 @@ class FirestoreRepository {
         user: UserSession,
         text: String,
         imageUrl: String? = null,
+        audioUrl: String? = null,
+        audioDurationSec: Int = 0,
         threadId: String? = null
     ): Result<ChatMessage> {
         val newMsg = ChatMessage(
@@ -490,6 +475,8 @@ class FirestoreRepository {
             senderName = user.displayName,
             text = text,
             imageUrl = imageUrl,
+            audioUrl = audioUrl,
+            audioDurationSec = audioDurationSec,
             threadId = threadId,
             timestamp = System.currentTimeMillis()
         )
@@ -510,6 +497,48 @@ class FirestoreRepository {
             }
         }
         return Result.success(newMsg)
+    }
+
+    fun unsendMessage(messageId: String) {
+        val currentList = _chatMessagesState.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == messageId }
+        if (index != -1) {
+            currentList[index] = currentList[index].copy(
+                isUnsent = true,
+                text = "សារត្រូវបានលុប (Message unsent)",
+                imageUrl = null,
+                audioUrl = null
+            )
+            _chatMessagesState.value = currentList
+        }
+        val db = firestore
+        val collection = AppConfig.getCollectionName("chats")
+        if (db != null) {
+            db.collection(collection).document(messageId).update(
+                mapOf(
+                    "isUnsent" to true,
+                    "text" to "សារត្រូវបានលុប (Message unsent)",
+                    "imageUrl" to null,
+                    "audioUrl" to null
+                )
+            )
+        }
+    }
+
+    fun reactToMessage(messageId: String, reaction: String?) {
+        val currentList = _chatMessagesState.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == messageId }
+        if (index != -1) {
+            val currentReaction = currentList[index].reaction
+            val newReaction = if (currentReaction == reaction) null else reaction
+            currentList[index] = currentList[index].copy(reaction = newReaction)
+            _chatMessagesState.value = currentList
+        }
+        val db = firestore
+        val collection = AppConfig.getCollectionName("chats")
+        if (db != null) {
+            db.collection(collection).document(messageId).update("reaction", reaction)
+        }
     }
 
     fun addCallRecord(record: CallRecord) {

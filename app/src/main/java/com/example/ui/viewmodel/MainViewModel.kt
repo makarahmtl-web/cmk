@@ -626,8 +626,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             headline = headline,
             workplace = workplace,
             location = location,
-            avatarUrl = if (avatarUrl != null) avatarUrl else current.avatarUrl,
-            coverUrl = if (coverUrl != null) coverUrl else current.coverUrl
+            avatarUrl = avatarUrl,
+            coverUrl = coverUrl
         )
         val exceptionHandler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable -> throwable.printStackTrace() }; viewModelScope.launch(exceptionHandler) {
             authRepository.updateUserProfile(updated)
@@ -931,24 +931,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Chat Action with Image & Thread Support
+    // Chat Action with Image, Voice & Thread Support
     fun sendChatMessage(
         text: String,
         imageUrl: String? = null,
+        audioUrl: String? = null,
+        audioDurationSec: Int = 0,
         threadId: String? = null
     ) {
         val user = currentUserSession.value ?: return
         com.example.data.service.AppAnalytics.logEvent("send_chat_message", mapOf(
             "length" to text.length.toString(),
-            "has_image" to (imageUrl != null).toString()
+            "has_image" to (imageUrl != null).toString(),
+            "has_audio" to (audioUrl != null).toString()
         ))
         val exceptionHandler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
             throwable.printStackTrace()
             com.example.data.service.AppAnalytics.recordException(throwable, "sendChatMessage error")
         }
         viewModelScope.launch(exceptionHandler) {
-            firestoreRepository.sendChatMessage(user, text, imageUrl, threadId)
+            firestoreRepository.sendChatMessage(user, text, imageUrl, audioUrl, audioDurationSec, threadId)
         }
+    }
+
+    fun unsendMessage(messageId: String) {
+        firestoreRepository.unsendMessage(messageId)
+    }
+
+    fun deleteChatMessage(messageId: String) {
+        viewModelScope.launch {
+            firestoreRepository.deleteChatMessage(messageId)
+        }
+    }
+
+    fun reactToMessage(messageId: String, reaction: String) {
+        firestoreRepository.reactToMessage(messageId, reaction)
     }
 
     // Call Action
