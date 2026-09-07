@@ -1,0 +1,6 @@
+{
+  "name": "CMK Construction Materials & Social Commerce",
+  "description": "A social commerce app for construction materials.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
